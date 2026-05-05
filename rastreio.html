@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rastreamento de Pedido</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:       #3aaa5c;
+      --green-light: #e8f7ed;
+      --green-glow:  rgba(58, 170, 92, 0.18);
+      --gray-900:    #1a1d23;
+      --gray-700:    #3d4350;
+      --gray-500:    #6b7280;
+      --gray-300:    #d1d5db;
+      --gray-100:    #f3f4f6;
+      --gray-50:     #f9fafb;
+      --white:       #ffffff;
+      --radius:      12px;
+      --shadow:      0 4px 24px rgba(0,0,0,0.07);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-900);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-100);
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--gray-900);
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--green);
+      border-radius: 50%;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 16px 60px;
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 680px;
+      overflow: hidden;
+      animation: fadeUp 0.45s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      padding: 28px 32px 24px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 6px;
+    }
+
+    .tracking-code {
+      font-family: 'DM Mono', monospace;
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--gray-900);
+      letter-spacing: 1px;
+    }
+
+    .status-badge {
+      margin-top: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--green-light);
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 100px;
+    }
+
+    .status-badge.pending {
+      background: #fff8e1;
+      color: #b45309;
+    }
+
+    .status-dot-badge {
+      width: 7px;
+      height: 7px;
+      background: currentColor;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .timeline-wrap {
+      padding: 32px 32px 36px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-500);
+      margin-bottom: 28px;
+      letter-spacing: 0.3px;
+    }
+
+    .timeline {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 162px;
+      top: 12px;
+      bottom: 12px;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--green) 70%, var(--gray-300) 100%);
+    }
+
+    .event {
+      display: grid;
+      grid-template-columns: 160px 24px 1fr;
+      align-items: flex-start;
+      gap: 0 16px;
+      padding: 0 0 28px;
+      position: relative;
+      animation: eventIn 0.4s ease both;
+    }
+
+    .event:last-child { padding-bottom: 0; }
+
+    @keyframes eventIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .event-meta {
+      text-align: right;
+      padding-top: 1px;
+    }
+
+    .event-date {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-700);
+      line-height: 1.4;
+    }
+
+    .event-time {
+      font-size: 12px;
+      color: var(--gray-500);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .event-local {
+      font-size: 11px;
+      color: var(--gray-500);
+      margin-top: 3px;
+      line-height: 1.3;
+    }
+
+    .event-dot-wrap {
+      display: flex;
+      justify-content: center;
+      padding-top: 3px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .event-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--green);
+      border: 2.5px solid var(--white);
+      box-shadow: 0 0 0 2px var(--green);
+      flex-shrink: 0;
+    }
+
+    .event:first-child .event-dot {
+      width: 18px;
+      height: 18px;
+      box-shadow: 0 0 0 2px var(--green), 0 0 12px var(--green-glow);
+    }
+
+    .event.dim .event-dot {
+      background: var(--gray-300);
+      box-shadow: 0 0 0 2px var(--gray-300);
+    }
+
+    .event-body { padding-top: 1px; }
+
+    .event-desc {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--gray-700);
+      line-height: 1.5;
+    }
+
+    .event:first-child .event-desc {
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+
+    .event.dim .event-desc { color: var(--gray-500); }
+
+    #loading {
+      padding: 56px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--gray-100);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text { font-size: 14px; color: var(--gray-500); }
+
+    #error {
+      display: none;
+      padding: 48px 32px;
+      text-align: center;
+    }
+
+    .error-icon { font-size: 40px; margin-bottom: 12px; }
+    .error-title { font-size: 16px; font-weight: 600; color: var(--gray-900); margin-bottom: 6px; }
+    .error-msg { font-size: 14px; color: var(--gray-500); line-height: 1.6; }
+
+    #no-code {
+      display: none;
+      padding: 48px 32px;
+      text-align: center;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: var(--gray-300);
+    }
+
+    @media (max-width: 500px) {
+      .card-header { padding: 20px; }
+      .timeline-wrap { padding: 24px 20px 28px; }
+      .timeline::before { left: 130px; }
+      .event { grid-template-columns: 128px 20px 1fr; }
+      .tracking-code { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo"><span class="logo-dot"></span> Rastreamento</span>
+</header>
+
+<main>
+  <div class="card">
+
+    <div id="no-code" style="display:none;">
+      <div class="error-icon">📦</div>
+      <div class="error-title">Código não informado</div>
+      <div class="error-msg">Nenhum código de rastreio foi encontrado na URL.<br>Verifique o link enviado.</div>
+    </div>
+
+    <div id="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Buscando informações de entrega…</div>
+    </div>
+
+    <div id="error">
+      <div class="error-icon">⚠️</div>
+      <div class="error-title">Não foi possível rastrear</div>
+      <div class="error-msg" id="error-msg">Tente novamente em alguns instantes.</div>
+    </div>
+
+    <div id="result" style="display:none;">
+      <div class="card-header">
+        <div class="label">Código de rastreio</div>
+        <div class="tracking-code" id="code-display"></div>
+        <div class="status-badge" id="status-badge">
+          <span class="status-dot-badge"></span>
+          <span id="status-text">Em trânsito</span>
+        </div>
+      </div>
+      <div class="timeline-wrap">
+        <div class="section-title">Histórico de movimentações</div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>Informações fornecidas pelos Correios</footer>
+
+<script>
+  // ── Configuração ──────────────────────────────────────────────────────────
+  const WEBHOOK_URL = 'https://cadastrodeprodutos-n8n.zbucu2.easypanel.host/webhook/rastreio';
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const params = new URLSearchParams(window.location.search);
+  const codigo = (params.get('codigo') || '').trim().toUpperCase();
+
+  const $loading = document.getElementById('loading');
+  const $error   = document.getElementById('error');
+  const $result  = document.getElementById('result');
+  const $noCode  = document.getElementById('no-code');
+
+  function show(el) {
+    [$loading, $error, $result, $noCode].forEach(e => e.style.display = 'none');
+    el.style.display = '';
+  }
+
+  if (!codigo) {
+    show($noCode);
+  } else {
+    document.getElementById('code-display').textContent = codigo;
+    buscarRastreio();
+  }
+
+  async function buscarRastreio() {
+    show($loading);
+    try {
+      const res = await fetch(`${WEBHOOK_URL}?codigo=${encodeURIComponent(codigo)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      // Aceita: array direto, { todosEventos: [] } ou { eventos: [] }
+      const eventos = Array.isArray(data)
+        ? data
+        : (data.todosEventos || data.eventos || []);
+
+      if (!eventos || eventos.length === 0) {
+        document.getElementById('error-msg').textContent =
+          'Nenhuma movimentação encontrada para este código.';
+        show($error);
+        return;
+      }
+
+      renderTimeline(eventos);
+      show($result);
+    } catch (e) {
+      document.getElementById('error-msg').textContent =
+        'Não foi possível buscar as informações. Tente novamente mais tarde.';
+      show($error);
+      console.error(e);
+    }
+  }
+
+  function renderTimeline(eventos) {
+    const timeline = document.getElementById('timeline');
+    timeline.innerHTML = '';
+
+    const ultimo    = eventos[0];
+    const badge     = document.getElementById('status-badge');
+    const texto     = document.getElementById('status-text');
+    const descricao = (ultimo.descricao || '').toLowerCase();
+
+    if (descricao.includes('entregue') || descricao.includes('entrega realizada')) {
+      badge.style.background = '#e8f7ed';
+      badge.style.color = '#3aaa5c';
+      texto.textContent = 'Entregue ✓';
+    } else if (descricao.includes('aguarde') || descricao.includes('transferência')) {
+      badge.classList.add('pending');
+      texto.textContent = 'Em transferência';
+    } else {
+      texto.textContent = 'Em andamento';
+    }
+
+    eventos.forEach((ev, idx) => {
+      const div = document.createElement('div');
+      div.className = 'event' + (idx > 0 && idx === eventos.length - 1 ? ' dim' : '');
+      div.style.animationDelay = `${idx * 60}ms`;
+
+      // Wonca: dtHrCriado = "2026-05-04T18:30:00"
+      const dt    = ev.dtHrCriado?.date || ev.dtHrCriado || '';
+      const data  = dt ? dt.substring(0, 10).split('-').reverse().join('/') : '';
+      const hora  = dt ? dt.substring(11, 16) : '';
+
+      // Local: nome da unidade ou cidade/uf
+      const local = ev.unidade?.nome
+        || (ev.unidade?.endereco?.cidade
+              ? ev.unidade.endereco.cidade + (ev.unidade.endereco.uf ? '/' + ev.unidade.endereco.uf : '')
+              : '');
+
+      const desc = ev.descricao || '';
+
+      div.innerHTML = `
+        <div class="event-meta">
+          <div class="event-date">${data}</div>
+          ${hora  ? `<div class="event-time">${hora}</div>`   : ''}
+          ${local ? `<div class="event-local">${local}</div>` : ''}
+        </div>
+        <div class="event-dot-wrap"><div class="event-dot"></div></div>
+        <div class="event-body">
+          <div class="event-desc">${desc}</div>
+        </div>
+      `;
+      timeline.appendChild(div);
+    });
+  }
+</script>
+</body>
+</html>
